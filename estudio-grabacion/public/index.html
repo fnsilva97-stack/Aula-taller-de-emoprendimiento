@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estudio de Grabación · Universidad del Magdalena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ============ LOGIN ============ -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="crest">EG</div>
+        <h1>Estudio de Grabación</h1>
+        <p>Universidad del Magdalena</p>
+      </div>
+
+      <div class="tabs-pill">
+        <button id="tab-login" class="active" onclick="UI.cambiarTabLogin('login')">Ingresar</button>
+        <button id="tab-register" onclick="UI.cambiarTabLogin('register')">Registrarse</button>
+      </div>
+
+      <form id="form-login">
+        <div class="field">
+          <label>Correo institucional</label>
+          <input type="email" id="login-correo" placeholder="usuario@unimagdalena.edu.co" required>
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input type="password" id="login-password" placeholder="Tu contraseña" required>
+        </div>
+        <div id="login-error" class="error-text" style="display:none"></div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:0.5rem">
+          Ingresar <i class="ti ti-arrow-right"></i>
+        </button>
+      </form>
+
+      <form id="form-register" style="display:none">
+        <div class="info-banner">
+          <i class="ti ti-info-circle"></i>
+          Solo se aceptan correos <strong>@unimagdalena.edu.co</strong>. Tu acceso quedará pendiente de aprobación por el administrador del estudio.
+        </div>
+        <div class="field">
+          <label>Nombre completo</label>
+          <input type="text" id="reg-nombre" placeholder="Tu nombre completo" required>
+        </div>
+        <div class="field">
+          <label>Correo institucional</label>
+          <input type="email" id="reg-correo" placeholder="usuario@unimagdalena.edu.co" required>
+        </div>
+        <div class="field">
+          <label>Tipo de usuario</label>
+          <select id="reg-tipo">
+            <option value="estudiante">Estudiante</option>
+            <option value="docente">Docente</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+        </div>
+        <div id="register-error" class="error-text" style="display:none"></div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top:0.5rem">
+          Solicitar acceso <i class="ti ti-send"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ APP PRINCIPAL ============ -->
+  <div id="main-app" style="display:none; flex:1; display:flex; flex-direction:column;">
+    <nav class="topbar">
+      <div class="brand">
+        <div class="crest-sm">EG</div>
+        <div class="brand-text">
+          <strong>Estudio de Grabación</strong>
+          <span>U. del Magdalena</span>
+        </div>
+      </div>
+      <button class="navtab active" data-page="horario" onclick="UI.irAPagina('horario')"><i class="ti ti-calendar"></i> Horario</button>
+      <button class="navtab" id="navtab-reservar" data-page="reservar" onclick="UI.irAPagina('reservar')"><i class="ti ti-plus"></i> Reservar</button>
+      <button class="navtab" data-page="mis-solicitudes" onclick="UI.irAPagina('mis-solicitudes')"><i class="ti ti-list"></i> Mis solicitudes</button>
+      <button class="navtab" id="navtab-admin" style="display:none" data-page="admin" onclick="UI.irAPagina('admin')"><i class="ti ti-settings"></i> Administrar</button>
+      <button class="navtab" onclick="UI.mostrarQR()"><i class="ti ti-qrcode"></i></button>
+      <button class="navtab" onclick="UI.cerrarSesion()"><i class="ti ti-logout"></i></button>
+    </nav>
+
+    <!-- ---- Página: Horario ---- -->
+    <div id="page-horario" class="page active">
+      <h2 class="page-title"><i class="ti ti-calendar"></i> Horario semanal</h2>
+      <div class="cal-toolbar">
+        <button class="btn btn-sm" onclick="UI.cambiarSemana(-1)"><i class="ti ti-chevron-left"></i></button>
+        <span class="week-label" id="week-label">Cargando semana...</span>
+        <button class="btn btn-sm" onclick="UI.cambiarSemana(1)"><i class="ti ti-chevron-right"></i></button>
+        <div class="cal-legend">
+          <span class="legend-clase">Clase</span>
+          <span class="legend-reserva">Reserva</span>
+          <span class="legend-bloqueo">Bloqueo</span>
+        </div>
+      </div>
+      <div id="cal-container">
+        <div class="empty-state"><i class="ti ti-loader"></i>Cargando horario...</div>
+      </div>
+      <p class="helper-text" style="margin-top:10px"><i class="ti ti-clock"></i> Horario de operación: 7:00 a.m. – 8:00 p.m., lunes a viernes.</p>
+    </div>
+
+    <!-- ---- Página: Reservar ---- -->
+    <div id="page-reservar" class="page">
+      <h2 class="page-title"><i class="ti ti-plus"></i> Nueva solicitud de reserva</h2>
+
+      <div id="reservar-sin-acceso" class="info-banner" style="display:none; background:var(--color-danger-bg); color:var(--color-danger-text)">
+        <i class="ti ti-lock"></i> No tienes acceso habilitado para hacer reservas. Si crees que esto es un error, contacta al administrador del estudio.
+      </div>
+
+      <div id="reservar-form-wrap">
+        <div class="info-banner">
+          <i class="ti ti-clock"></i> Cada reserva dura <strong>2 horas</strong>. Debe solicitarse con al menos <strong>24 horas de anticipación</strong>. Si el horario está libre, la reserva se aprueba automáticamente.
+        </div>
+
+        <form id="form-reserva">
+          <div class="grid-2">
+            <div class="field">
+              <label>Fecha</label>
+              <input type="date" id="res-fecha" required>
+            </div>
+            <div class="field">
+              <label>Hora de inicio</label>
+              <select id="res-hora-inicio" required></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Motivo de la reserva</label>
+            <textarea id="res-motivo" placeholder="Describe brevemente el propósito de la sesión..." required></textarea>
+          </div>
+
+          <h3 class="section-label">Participantes</h3>
+          <div id="participantes-lista"></div>
+          <button type="button" class="btn btn-sm" onclick="UI.agregarParticipante()"><i class="ti ti-plus"></i> Agregar participante</button>
+
+          <h3 class="section-label">Elementos a utilizar</h3>
+          <div id="elementos-lista"></div>
+          <button type="button" class="btn btn-sm" onclick="UI.agregarElemento()"><i class="ti ti-plus"></i> Agregar elemento</button>
+
+          <div class="disclaimer-box">
+            <strong>Compromiso de uso responsable del espacio</strong><br>
+            Al enviar esta solicitud, me comprometo a: (1) hacer uso adecuado de todos los equipos y elementos del estudio; (2) dejar el espacio en las mismas condiciones en que lo encontré; (3) reportar cualquier daño o inconveniente al encargado; (4) respetar el horario de la reserva, incluyendo la hora de finalización; (5) no ingresar con alimentos ni bebidas al área de grabación. El incumplimiento de estas condiciones puede resultar en la suspensión del acceso al estudio.
+            <div class="disclaimer-check">
+              <input type="checkbox" id="chk-disclaimer">
+              <label for="chk-disclaimer">He leído y acepto el compromiso de uso responsable del espacio.</label>
+            </div>
+          </div>
+
+          <div id="reserva-error" class="error-text" style="display:none"></div>
+
+          <div style="display:flex; gap:8px; margin-top:1.25rem">
+            <button type="submit" class="btn btn-primary" id="btn-enviar-reserva">Enviar solicitud <i class="ti ti-send"></i></button>
+            <button type="button" class="btn" onclick="UI.irAPagina('horario')">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ---- Página: Mis solicitudes ---- -->
+    <div id="page-mis-solicitudes" class="page">
+      <h2 class="page-title"><i class="ti ti-list"></i> Mis solicitudes</h2>
+      <div class="card">
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Horario</th><th>Motivo</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="mis-solicitudes-body"></tbody>
+          </table>
+        </div>
+        <div id="mis-solicitudes-vacio" class="empty-state" style="display:none">
+          <i class="ti ti-calendar-off"></i> Aún no has hecho ninguna solicitud.
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- Página: Admin ---- -->
+    <div id="page-admin" class="page">
+      <h2 class="page-title"><i class="ti ti-settings"></i> Panel de administración</h2>
+
+      <div class="metrics-row">
+        <div class="metric-card"><span class="val" id="metric-pendientes">–</span><div class="lbl">Solicitudes de acceso pendientes</div></div>
+        <div class="metric-card"><span class="val" id="metric-reservas">–</span><div class="lbl">Reservas esta semana</div></div>
+        <div class="metric-card"><span class="val" id="metric-usuarios">–</span><div class="lbl">Usuarios habilitados</div></div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab active" data-tab="reservas" onclick="UI.cambiarSubtabAdmin('reservas')">Reservas</button>
+        <button class="subtab" data-tab="usuarios" onclick="UI.cambiarSubtabAdmin('usuarios')">Usuarios y accesos</button>
+        <button class="subtab" data-tab="horario" onclick="UI.cambiarSubtabAdmin('horario')">Clases / bloqueos</button>
+        <button class="subtab" data-tab="inventario" onclick="UI.cambiarSubtabAdmin('inventario')">Inventario</button>
+      </div>
+
+      <div id="admin-reservas" class="admin-subtab">
+        <div class="card">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Fecha</th><th>Horario</th><th>Solicitante</th><th>Motivo</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="admin-reservas-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="admin-usuarios" class="admin-subtab" style="display:none">
+        <h3 class="section-label">Solicitudes de acceso pendientes</h3>
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Nombre</th><th>Correo</th><th>Tipo</th><th>Fecha solicitud</th><th></th></tr></thead>
+              <tbody id="admin-pendientes-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <h3 class="section-label">Usuarios con acceso</h3>
+        <div class="card">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Nombre</th><th>Correo</th><th>Tipo</th><th>Puede reservar</th><th></th></tr></thead>
+              <tbody id="admin-usuarios-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="admin-horario" class="admin-subtab" style="display:none">
+        <h3 class="section-label">Agregar clase o bloqueo</h3>
+        <div class="card" style="margin-bottom:1.25rem">
+          <form id="form-evento-fijo">
+            <div class="grid-2">
+              <div class="field">
+                <label>Tipo</label>
+                <select id="ev-tipo"><option value="clase">Clase programada</option><option value="bloqueo">Bloqueo / mantenimiento</option></select>
+              </div>
+              <div class="field">
+                <label>Título / descripción</label>
+                <input type="text" id="ev-titulo" placeholder="ej. Producción Musical — Prof. Sánchez" required>
+              </div>
+              <div class="field">
+                <label>Día de la semana</label>
+                <select id="ev-dia">
+                  <option value="1">Lunes</option><option value="2">Martes</option><option value="3">Miércoles</option>
+                  <option value="4">Jueves</option><option value="5">Viernes</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Hora inicio</label>
+                <select id="ev-hora-inicio"></select>
+              </div>
+              <div class="field">
+                <label>Hora fin</label>
+                <select id="ev-hora-fin"></select>
+              </div>
+              <div class="field">
+                <label>Fecha inicio (vigencia)</label>
+                <input type="date" id="ev-fecha-inicio" required>
+              </div>
+              <div class="field">
+                <label>Fecha fin (vigencia)</label>
+                <input type="date" id="ev-fecha-fin" required>
+              </div>
+            </div>
+            <div id="evento-error" class="error-text" style="display:none"></div>
+            <button type="submit" class="btn btn-primary"><i class="ti ti-plus"></i> Agregar al horario</button>
+          </form>
+        </div>
+        <h3 class="section-label">Eventos programados</h3>
+        <div class="card">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Tipo</th><th>Título</th><th>Día</th><th>Horario</th><th>Vigencia</th><th></th></tr></thead>
+              <tbody id="admin-eventos-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="admin-inventario" class="admin-subtab" style="display:none">
+        <h3 class="section-label">Inventario de elementos</h3>
+        <div class="card" style="margin-bottom:1.25rem">
+          <form id="form-inventario" style="display:flex; gap:10px; align-items:flex-end">
+            <div class="field" style="flex:2; margin-bottom:0">
+              <label>Nombre del elemento</label>
+              <input type="text" id="inv-nombre" placeholder="ej. Micrófono condensador" required>
+            </div>
+            <div class="field" style="flex:1; margin-bottom:0">
+              <label>Cantidad disponible</label>
+              <input type="number" id="inv-cantidad" min="1" value="1" required>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="ti ti-plus"></i> Agregar</button>
+          </form>
+        </div>
+        <div class="card">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Elemento</th><th>Cantidad</th><th></th></tr></thead>
+              <tbody id="admin-inventario-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal QR -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal-box">
+    <h3>Acceso rápido</h3>
+    <div id="qr-canvas-wrap"></div>
+    <p class="helper-text">Escanea este código para abrir la página del estudio desde tu celular.</p>
+    <button class="btn btn-block" style="margin-top:1rem" onclick="UI.cerrarQR()">Cerrar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/reservas.js"></script>
+<script src="/js/admin.js"></script>
+<script src="/js/ui.js"></script>
+</body>
+</html>
