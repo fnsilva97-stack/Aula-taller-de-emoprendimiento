@@ -121,6 +121,15 @@ textarea { min-height: 80px; resize: vertical; font-family: var(--font-body); }
 .navtab.active { color: var(--color-primary-dark); border-bottom-color: var(--color-primary); }
 .navtab:hover:not(.active) { color: var(--color-text); }
 
+.topbar-actions {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  padding-left: 12px; margin-left: 8px; border-left: 1px solid var(--color-border);
+}
+.usuario-actual-info {
+  background: #f5f3ec; padding: 6px 1.5rem; font-size: 12px; color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border); display: flex; justify-content: flex-end;
+}
+
 .page { display: none; padding: 1.75rem; max-width: 1080px; margin: 0 auto; width: 100%; }
 .page.active { display: block; }
 

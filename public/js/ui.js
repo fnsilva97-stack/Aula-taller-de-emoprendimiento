@@ -109,6 +109,10 @@ const UI = {
     const esAdmin = this.perfilActual.tipo_usuario === 'admin';
     document.getElementById('navtab-admin').style.display = esAdmin ? '' : 'none';
 
+    const infoEl = document.getElementById('usuario-actual-info');
+    const etiquetaTipo = esAdmin ? 'Administrador' : (this.perfilActual.tipo_usuario === 'docente' ? 'Docente' : 'Estudiante');
+    infoEl.innerHTML = `<i class="ti ti-user-circle"></i>&nbsp; Sesión activa: <strong>${this.escaparHtml(this.perfilActual.nombre_completo)}</strong> (${this.escaparHtml(this.perfilActual.correo)}) · ${etiquetaTipo}`;
+
     this.irAPagina('horario');
     await this.cargarHorario();
 

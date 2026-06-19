@@ -88,9 +88,13 @@
       <button class="navtab" id="navtab-reservar" data-page="reservar" onclick="UI.irAPagina('reservar')"><i class="ti ti-plus"></i> Reservar</button>
       <button class="navtab" data-page="mis-solicitudes" onclick="UI.irAPagina('mis-solicitudes')"><i class="ti ti-list"></i> Mis solicitudes</button>
       <button class="navtab" id="navtab-admin" style="display:none" data-page="admin" onclick="UI.irAPagina('admin')"><i class="ti ti-settings"></i> Administrar</button>
-      <button class="navtab" onclick="UI.mostrarQR()"><i class="ti ti-qrcode"></i></button>
-      <button class="navtab" onclick="UI.cerrarSesion()"><i class="ti ti-logout"></i></button>
+      <div class="topbar-actions">
+        <button class="btn btn-sm" onclick="UI.mostrarQR()" title="Mostrar código QR" aria-label="Mostrar código QR"><i class="ti ti-qrcode"></i></button>
+        <button class="btn btn-sm" id="btn-cerrar-sesion" onclick="UI.cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="ti ti-logout"></i> Cerrar sesión</button>
+      </div>
     </nav>
+
+    <div id="usuario-actual-info" class="usuario-actual-info"></div>
 
     <!-- ---- Página: Horario ---- -->
     <div id="page-horario" class="page active">
