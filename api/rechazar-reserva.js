@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
       .from('reservas')
       .update({ estado: 'rechazada', motivo_rechazo: motivoRechazo || null })
       .eq('id', reservaId)
-      .select('*, profiles(nombre_completo, correo)')
+      .select('*, profiles!reservas_solicitante_id_fkey(nombre_completo, correo)')
       .single();
 
     if (error) throw error;

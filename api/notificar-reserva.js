@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
 
     const { data: reserva, error } = await supabaseAdmin
       .from('reservas')
-      .select('*, profiles(nombre_completo, correo)')
+      .select('*, profiles!reservas_solicitante_id_fkey(nombre_completo, correo)')
       .eq('id', reservaId)
       .single();
 

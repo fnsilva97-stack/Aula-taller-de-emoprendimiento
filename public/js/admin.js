@@ -82,7 +82,7 @@ const Admin = {
   async obtenerTodasLasReservas(fechaInicioISO, fechaFinISO) {
     const { data, error } = await supabaseClient
       .from('reservas')
-      .select('*, profiles(nombre_completo, correo)')
+      .select('*, profiles!reservas_solicitante_id_fkey(nombre_completo, correo)')
       .gte('fecha', fechaInicioISO)
       .lte('fecha', fechaFinISO)
       .order('fecha', { ascending: true });

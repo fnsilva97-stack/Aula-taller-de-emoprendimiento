@@ -108,7 +108,7 @@ const Reservas = {
   async obtenerHorarioSemana(fechaInicioISO, fechaFinISO) {
     const { data: reservas, error: errReservas } = await supabaseClient
       .from('reservas')
-      .select('*, profiles(nombre_completo)')
+      .select('*, profiles!reservas_solicitante_id_fkey(nombre_completo)')
       .gte('fecha', fechaInicioISO)
       .lte('fecha', fechaFinISO)
       .in('estado', ['pendiente', 'aprobada']);
