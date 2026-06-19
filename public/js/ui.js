@@ -15,6 +15,7 @@ const UI = {
     document.getElementById('form-reserva').addEventListener('submit', (e) => this.manejarEnvioReserva(e));
     document.getElementById('form-evento-fijo').addEventListener('submit', (e) => this.manejarCrearEvento(e));
     document.getElementById('form-inventario').addEventListener('submit', (e) => this.manejarAgregarInventario(e));
+    document.getElementById('form-reporte-uso').addEventListener('submit', (e) => this.manejarEnvioReporte(e));
 
     const sesion = await Auth.obtenerSesionActual();
     if (sesion) {
@@ -309,27 +310,49 @@ const UI = {
   async cargarMisSolicitudes() {
     const tbody = document.getElementById('mis-solicitudes-body');
     const vacio = document.getElementById('mis-solicitudes-vacio');
+    const banner = document.getElementById('reportes-pendientes-banner');
     try {
       const solicitudes = await Reservas.obtenerMisSolicitudes();
       if (solicitudes.length === 0) {
         tbody.innerHTML = '';
         vacio.style.display = '';
+        banner.style.display = 'none';
         return;
       }
       vacio.style.display = 'none';
+
+      const hayPendientes = solicitudes.some(s => Reservas.necesitaReporte(s));
+      banner.style.display = hayPendientes ? '' : 'none';
+
       tbody.innerHTML = solicitudes.map(s => `
         <tr>
           <td>${this.formatearFechaLegible(s.fecha)}</td>
           <td>${s.hora_inicio} - ${s.hora_fin}</td>
           <td>${this.escaparHtml(s.motivo)}</td>
           <td>${this.badgeEstado(s.estado)}</td>
-          <td>${s.estado === 'pendiente' || s.estado === 'aprobada' ? `<button class="btn btn-sm btn-danger" onclick="UI.cancelarSolicitud('${s.id}')">Cancelar</button>` : ''}</td>
+          <td>${this.celdaAccionesMisSolicitudes(s)}</td>
         </tr>
       `).join('');
     } catch (err) {
       console.error(err);
       tbody.innerHTML = `<tr><td colspan="5">Error al cargar tus solicitudes.</td></tr>`;
     }
+  },
+
+  celdaAccionesMisSolicitudes(s) {
+    if (Reservas.necesitaReporte(s)) {
+      return `<button class="btn btn-sm btn-primary" onclick="UI.abrirReporte('${s.id}', '${this.escaparHtml(s.fecha)}', '${s.hora_inicio}', '${s.hora_fin}')"><i class="ti ti-clipboard-check"></i> Reportar uso</button>`;
+    }
+    if (s.reporte_estado === 'sin_novedad') {
+      return `<span class="badge badge-reporte-sin-novedad"><i class="ti ti-check"></i> Sin novedad</span>`;
+    }
+    if (s.reporte_estado === 'con_incidente') {
+      return `<span class="badge badge-reporte-con-incidente"><i class="ti ti-alert-triangle"></i> Con incidente</span>`;
+    }
+    if (s.estado === 'pendiente' || s.estado === 'aprobada') {
+      return `<button class="btn btn-sm btn-danger" onclick="UI.cancelarSolicitud('${s.id}')">Cancelar</button>`;
+    }
+    return '';
   },
 
   async cancelarSolicitud(id) {
@@ -353,6 +376,14 @@ const UI = {
 
       document.getElementById('metric-pendientes').textContent = pendientes.length;
       document.getElementById('metric-usuarios').textContent = usuarios.length;
+
+      try {
+        const totalReportesPendientes = await Admin.contarReportesPendientes();
+        document.getElementById('metric-reportes-pendientes').textContent = totalReportesPendientes;
+      } catch (err) {
+        console.error('Error al contar reportes pendientes:', err);
+        document.getElementById('metric-reportes-pendientes').textContent = '–';
+      }
 
       document.getElementById('admin-pendientes-body').innerHTML = pendientes.length === 0
         ? `<tr><td colspan="5" style="color:var(--color-text-muted)">No hay solicitudes pendientes.</td></tr>`
@@ -399,7 +430,7 @@ const UI = {
       document.getElementById('metric-reservas').textContent = reservas.filter(r => r.estado === 'aprobada').length;
 
       document.getElementById('admin-reservas-body').innerHTML = reservas.length === 0
-        ? `<tr><td colspan="6" style="color:var(--color-text-muted)">No hay reservas esta semana.</td></tr>`
+        ? `<tr><td colspan="7" style="color:var(--color-text-muted)">No hay reservas esta semana.</td></tr>`
         : reservas.map(r => `
           <tr>
             <td>${this.formatearFechaLegible(r.fecha)}</td>
@@ -407,6 +438,7 @@ const UI = {
             <td>${r.profiles ? this.escaparHtml(r.profiles.nombre_completo) : '-'}</td>
             <td>${this.escaparHtml(r.motivo)}</td>
             <td>${this.badgeEstado(r.estado)}</td>
+            <td>${this.celdaReporteAdmin(r)}</td>
             <td>${r.estado === 'aprobada' || r.estado === 'pendiente' ? `<button class="btn btn-sm btn-danger" onclick="UI.rechazarReservaAdmin('${r.id}')">Rechazar</button>` : ''}</td>
           </tr>
         `).join('');
@@ -452,6 +484,19 @@ const UI = {
     } catch (err) {
       console.error(err);
     }
+  },
+
+  celdaReporteAdmin(r) {
+    if (r.reporte_estado === 'sin_novedad') {
+      return `<span class="badge badge-reporte-sin-novedad"><i class="ti ti-check"></i> Sin novedad</span>`;
+    }
+    if (r.reporte_estado === 'con_incidente') {
+      return `<span class="badge badge-reporte-con-incidente" title="${this.escaparHtml(r.reporte_descripcion || '')}"><i class="ti ti-alert-triangle"></i> Con incidente</span>`;
+    }
+    if (Reservas.necesitaReporte(r)) {
+      return `<button class="btn btn-sm" onclick="UI.abrirReporte('${r.id}', '${r.fecha}', '${r.hora_inicio}', '${r.hora_fin}', true)"><i class="ti ti-clipboard-check"></i> Reportar</button>`;
+    }
+    return `<span class="badge badge-reporte-pendiente">No aplica aún</span>`;
   },
 
   cambiarSubtabAdmin(tab) {
@@ -560,6 +605,70 @@ const UI = {
       await this.cargarInventarioAdmin();
     } catch (err) {
       this.mostrarToast(err.message, true);
+    }
+  },
+
+  // ---------------- Reporte de uso ----------------
+  reporteTipoSeleccionado: null,
+  reporteEsAdmin: false,
+
+  abrirReporte(reservaId, fecha, horaInicio, horaFin, esAdmin = false) {
+    this.reporteTipoSeleccionado = null;
+    this.reporteEsAdmin = esAdmin;
+    document.getElementById('reporte-reserva-id').value = reservaId;
+    document.getElementById('reporte-detalle-reserva').textContent = `Reserva del ${this.formatearFechaLegible(fecha)}, ${horaInicio} – ${horaFin}.`;
+    document.getElementById('reporte-descripcion').value = '';
+    document.getElementById('reporte-descripcion-wrap').style.display = 'none';
+    document.getElementById('btn-reporte-sin-novedad').classList.remove('btn-toggle-selected');
+    document.getElementById('btn-reporte-con-incidente').classList.remove('btn-toggle-selected', 'danger');
+    document.getElementById('btn-enviar-reporte').disabled = true;
+    document.getElementById('reporte-error').style.display = 'none';
+    document.getElementById('reporte-modal').classList.add('show');
+  },
+
+  cerrarReporte() {
+    document.getElementById('reporte-modal').classList.remove('show');
+  },
+
+  seleccionarTipoReporte(tipo) {
+    this.reporteTipoSeleccionado = tipo;
+    document.getElementById('btn-reporte-sin-novedad').classList.toggle('btn-toggle-selected', tipo === 'sin_novedad');
+    document.getElementById('btn-reporte-con-incidente').classList.toggle('btn-toggle-selected', tipo === 'con_incidente');
+    document.getElementById('btn-reporte-con-incidente').classList.toggle('danger', tipo === 'con_incidente');
+    document.getElementById('reporte-descripcion-wrap').style.display = tipo === 'con_incidente' ? '' : 'none';
+    document.getElementById('btn-enviar-reporte').disabled = false;
+  },
+
+  async manejarEnvioReporte(e) {
+    e.preventDefault();
+    const errorEl = document.getElementById('reporte-error');
+    errorEl.style.display = 'none';
+
+    if (!this.reporteTipoSeleccionado) {
+      errorEl.textContent = 'Selecciona si el espacio quedó sin novedad o con incidente.';
+      errorEl.style.display = '';
+      return;
+    }
+
+    const reservaId = document.getElementById('reporte-reserva-id').value;
+    const descripcion = document.getElementById('reporte-descripcion').value;
+
+    try {
+      if (this.reporteEsAdmin) {
+        await Admin.reportarUso(reservaId, this.reporteTipoSeleccionado, descripcion);
+      } else {
+        await Reservas.enviarReporteUso(reservaId, { estado: this.reporteTipoSeleccionado, descripcion });
+      }
+      this.mostrarToast('Reporte de uso enviado. Gracias por mantener el registro del espacio.');
+      this.cerrarReporte();
+      if (this.reporteEsAdmin) {
+        await this.cargarReservasAdmin();
+      } else {
+        await this.cargarMisSolicitudes();
+      }
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = '';
     }
   },
 

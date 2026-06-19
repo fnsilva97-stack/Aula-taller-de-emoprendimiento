@@ -59,6 +59,10 @@ const Admin = {
     return this._llamarApi('rechazar-reserva', { reservaId, motivoRechazo });
   },
 
+  async reportarUso(reservaId, estado, descripcion) {
+    return this._llamarApi('reportar-uso-admin', { reservaId, estado, descripcion });
+  },
+
   async crearEventoFijo(evento) {
     return this._llamarApi('crear-evento-fijo', evento);
   },
@@ -84,5 +88,19 @@ const Admin = {
       .order('fecha', { ascending: true });
     if (error) throw error;
     return data || [];
+  },
+
+  async contarReportesPendientes() {
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabaseClient
+      .from('reservas')
+      .select('id, fecha, hora_fin')
+      .eq('estado', 'aprobada')
+      .eq('reporte_estado', 'pendiente')
+      .lte('fecha', hoy);
+    if (error) throw error;
+
+    const ahora = new Date();
+    return (data || []).filter(r => new Date(`${r.fecha}T${r.hora_fin}:00`) < ahora).length;
   }
 };

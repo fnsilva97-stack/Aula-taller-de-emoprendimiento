@@ -148,6 +148,36 @@ const Reservas = {
     if (error) throw error;
   },
 
+  estaVencida(reserva) {
+    const fechaHoraFin = new Date(`${reserva.fecha}T${reserva.hora_fin}:00`);
+    return fechaHoraFin < new Date();
+  },
+
+  necesitaReporte(reserva) {
+    return reserva.estado === 'aprobada' && this.estaVencida(reserva) && reserva.reporte_estado === 'pendiente';
+  },
+
+  async enviarReporteUso(reservaId, { estado, descripcion }) {
+    if (estado === 'con_incidente' && (!descripcion || descripcion.trim().length === 0)) {
+      throw new Error('Debes describir el incidente ocurrido.');
+    }
+
+    const { data: userData } = await supabaseClient.auth.getUser();
+    if (!userData.user) throw new Error('Debes iniciar sesión.');
+
+    const { error } = await supabaseClient
+      .from('reservas')
+      .update({
+        reporte_estado: estado,
+        reporte_descripcion: descripcion ? descripcion.trim() : null,
+        reporte_por: userData.user.id,
+        reporte_fecha: new Date().toISOString()
+      })
+      .eq('id', reservaId);
+
+    if (error) throw error;
+  },
+
   async obtenerInventario() {
     const { data, error } = await supabaseClient
       .from('inventario')

@@ -175,6 +175,9 @@
     <!-- ---- Página: Mis solicitudes ---- -->
     <div id="page-mis-solicitudes" class="page">
       <h2 class="page-title"><i class="ti ti-list"></i> Mis solicitudes</h2>
+      <div id="reportes-pendientes-banner" class="info-banner" style="display:none; background:var(--color-warning-bg); color:var(--color-warning-text)">
+        <i class="ti ti-alert-triangle"></i> Tienes reservas finalizadas sin reporte de uso. Complétalo para llevar el registro del estado del espacio.
+      </div>
       <div class="card">
         <div class="table-scroll">
           <table class="data-table">
@@ -196,6 +199,7 @@
         <div class="metric-card"><span class="val" id="metric-pendientes">–</span><div class="lbl">Solicitudes de acceso pendientes</div></div>
         <div class="metric-card"><span class="val" id="metric-reservas">–</span><div class="lbl">Reservas esta semana</div></div>
         <div class="metric-card"><span class="val" id="metric-usuarios">–</span><div class="lbl">Usuarios habilitados</div></div>
+        <div class="metric-card"><span class="val" id="metric-reportes-pendientes">–</span><div class="lbl">Reportes de uso pendientes</div></div>
       </div>
 
       <div class="subtabs">
@@ -209,7 +213,7 @@
         <div class="card">
           <div class="table-scroll">
             <table class="data-table">
-              <thead><tr><th>Fecha</th><th>Horario</th><th>Solicitante</th><th>Motivo</th><th>Estado</th><th></th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Horario</th><th>Solicitante</th><th>Motivo</th><th>Estado</th><th>Reporte de uso</th><th></th></tr></thead>
               <tbody id="admin-reservas-body"></tbody>
             </table>
           </div>
@@ -316,6 +320,33 @@
     </div>
   </div>
 
+</div>
+
+<!-- Modal Reporte de uso -->
+<div class="modal-overlay" id="reporte-modal">
+  <div class="modal-box" style="max-width:420px; text-align:left">
+    <h3 style="margin-bottom:0.5rem"><i class="ti ti-clipboard-check"></i> Reporte de uso del espacio</h3>
+    <p class="helper-text" id="reporte-detalle-reserva" style="margin-bottom:1rem"></p>
+    <form id="form-reporte-uso">
+      <input type="hidden" id="reporte-reserva-id">
+      <div class="field">
+        <label>¿Cómo quedó el espacio al finalizar?</label>
+        <div style="display:flex; gap:8px; margin-top:4px">
+          <button type="button" class="btn" id="btn-reporte-sin-novedad" style="flex:1" onclick="UI.seleccionarTipoReporte('sin_novedad')"><i class="ti ti-check"></i> Sin novedad</button>
+          <button type="button" class="btn" id="btn-reporte-con-incidente" style="flex:1" onclick="UI.seleccionarTipoReporte('con_incidente')"><i class="ti ti-alert-triangle"></i> Con incidente</button>
+        </div>
+      </div>
+      <div class="field" id="reporte-descripcion-wrap" style="display:none">
+        <label>Describe el incidente</label>
+        <textarea id="reporte-descripcion" placeholder="¿Qué ocurrió? ¿Algún daño, elemento faltante o inconveniente?"></textarea>
+      </div>
+      <div id="reporte-error" class="error-text" style="display:none"></div>
+      <div style="display:flex; gap:8px; margin-top:1rem">
+        <button type="submit" class="btn btn-primary" style="flex:1" id="btn-enviar-reporte" disabled>Enviar reporte</button>
+        <button type="button" class="btn" onclick="UI.cerrarReporte()">Cerrar</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Modal QR -->

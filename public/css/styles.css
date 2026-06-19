@@ -171,6 +171,12 @@ table.data-table tr:hover td { background: #f8f7f2; }
 .badge-aprobada { background: var(--color-success-bg); color: var(--color-success-text); }
 .badge-rechazada { background: var(--color-danger-bg); color: var(--color-danger-text); }
 .badge-cancelada { background: #ece9e1; color: var(--color-text-muted); }
+.badge-reporte-pendiente { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.badge-reporte-sin-novedad { background: var(--color-success-bg); color: var(--color-success-text); }
+.badge-reporte-con-incidente { background: var(--color-danger-bg); color: var(--color-danger-text); }
+
+.btn-toggle-selected { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.btn-toggle-selected.danger { background: var(--color-danger-text); border-color: var(--color-danger-text); }
 
 /* ---------- Form (reserva) ---------- */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -189,7 +195,7 @@ table.data-table tr:hover td { background: #f8f7f2; }
 .disclaimer-check label { font-size: 13px; cursor: pointer; }
 
 /* ---------- Admin metrics ---------- */
-.metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
 .metric-card { background: #f5f3ec; border-radius: 8px; padding: 1rem 1.1rem; text-align: center; }
 .metric-card .val { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: var(--color-primary-dark); display: block; }
 .metric-card .lbl { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
@@ -223,7 +229,7 @@ table.data-table tr:hover td { background: #f8f7f2; }
 
 @media (max-width: 700px) {
   .grid-2 { grid-template-columns: 1fr; }
-  .metrics-row { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: 1fr 1fr; }
   .cal-grid { grid-template-columns: 44px repeat(5, minmax(70px,1fr)); }
   .topbar { overflow-x: auto; }
 }
