@@ -34,6 +34,41 @@ const Reservas = {
     return `${String(hFin).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   },
 
+  async validarSinChoqueConEventoFijo(fecha, horaInicio, horaFin) {
+    // Nota: esta validación también se aplica de forma definitiva en el servidor
+    // (api/crear-reserva.js). Se mantiene aquí solo como feedback rápido opcional.
+    const diaSemana = new Date(`${fecha}T00:00:00`).getDay();
+    const diaSemanaISO = diaSemana === 0 ? 7 : diaSemana;
+
+    const { data: eventos, error } = await supabaseClient
+      .from('eventos_fijos')
+      .select('*')
+      .eq('dia_semana', diaSemanaISO)
+      .lte('fecha_inicio', fecha)
+      .gte('fecha_fin', fecha);
+
+    if (error) throw error;
+
+    const inicioMin = this._horaAMinutos(horaInicio);
+    const finMin = this._horaAMinutos(horaFin);
+
+    const choque = (eventos || []).find(ev => {
+      const evInicio = this._horaAMinutos(ev.hora_inicio);
+      const evFin = this._horaAMinutos(ev.hora_fin);
+      return inicioMin < evFin && finMin > evInicio;
+    });
+
+    if (choque) {
+      const tipoTexto = choque.tipo === 'clase' ? 'una clase programada' : 'un bloqueo del espacio';
+      throw new Error(`Ese horario coincide con ${tipoTexto}: "${choque.titulo}" (${choque.hora_inicio}–${choque.hora_fin}). Elige otra franja.`);
+    }
+  },
+
+  _horaAMinutos(horaStr) {
+    const [h, m] = horaStr.split(':').map(Number);
+    return h * 60 + m;
+  },
+
   async crearSolicitud({ fecha, horaInicio, motivo, participantes, elementos, aceptoDisclaimer }) {
     if (!aceptoDisclaimer) {
       throw new Error('Debes aceptar el compromiso de uso responsable del espacio.');
@@ -45,49 +80,29 @@ const Reservas = {
       throw new Error('Debes indicar al menos un participante.');
     }
 
+    // Validaciones rápidas en el cliente (la validación definitiva ocurre en el servidor)
     const horaFin = this.calcularHoraFin(horaInicio);
-
     this.validarAnticipacion(fecha, horaInicio);
     this.validarDentroDeHorario(fecha, horaInicio, horaFin);
 
-    const { data: userData } = await supabaseClient.auth.getUser();
-    if (!userData.user) throw new Error('Debes iniciar sesión.');
+    const sesion = await Auth.obtenerSesionActual();
+    if (!sesion) throw new Error('Debes iniciar sesión.');
 
-    const { data, error } = await supabaseClient
-      .from('reservas')
-      .insert({
-        solicitante_id: userData.user.id,
-        fecha,
-        hora_inicio: horaInicio,
-        hora_fin: horaFin,
-        motivo: motivo.trim(),
-        participantes,
-        elementos,
-        acepto_disclaimer: true,
-        estado: 'aprobada' // aprobación automática si el horario está libre (la BD impide choques)
-      })
-      .select()
-      .single();
+    const respuesta = await fetch('/api/crear-reserva', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sesion.access_token}`
+      },
+      body: JSON.stringify({ fecha, horaInicio, motivo, participantes, elementos, aceptoDisclaimer })
+    });
 
-    if (error) {
-      if (error.code === '23505') {
-        throw new Error('Ese horario ya fue reservado por otra persona. Por favor elige otra franja.');
-      }
-      throw error;
+    const resultado = await respuesta.json();
+    if (!respuesta.ok) {
+      throw new Error(resultado.error || 'Error al crear la reserva.');
     }
 
-    // Disparar notificación por correo (función serverless)
-    try {
-      await fetch('/api/notificar-reserva', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reservaId: data.id, tipo: 'aprobada' })
-      });
-    } catch (e) {
-      console.warn('No se pudo enviar la notificación por correo:', e);
-    }
-
-    return data;
+    return resultado.reserva;
   },
 
   async obtenerHorarioSemana(fechaInicioISO, fechaFinISO) {

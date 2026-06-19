@@ -127,9 +127,11 @@ create policy "eventos_lectura" on public.eventos_fijos
 create policy "reservas_lectura" on public.reservas
   for select using (auth.role() = 'authenticated');
 
--- RESERVAS: un usuario puede crear su propia reserva
-create policy "reservas_crear_propia" on public.reservas
-  for insert with check (auth.uid() = solicitante_id);
+-- NOTA: la creación de reservas ya NO se hace con insert directo desde el navegador.
+-- Se hace exclusivamente a través de la función serverless api/crear-reserva.js,
+-- que usa la service_role key y aplica todas las validaciones en el servidor
+-- (anticipación de 24h, horario de operación, choque con clases/bloqueos y con otras reservas).
+-- Por eso NO se crea una política de "insert" para usuarios autenticados en esta tabla.
 
 -- RESERVAS: un usuario puede cancelar (actualizar) su propia reserva pendiente
 create policy "reservas_cancelar_propia" on public.reservas
