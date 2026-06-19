@@ -574,7 +574,16 @@ const UI = {
       colorDark: '#1f2421',
       colorLight: '#ffffff'
     });
+    document.getElementById('qr-url-text').textContent = window.location.href;
     document.getElementById('qr-modal').classList.add('show');
+  },
+
+  copiarEnlaceQR() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      this.mostrarToast('Enlace copiado al portapapeles.');
+    }).catch(() => {
+      this.mostrarToast('No se pudo copiar automáticamente. Copia el enlace manualmente.', true);
+    });
   },
 
   cerrarQR() {

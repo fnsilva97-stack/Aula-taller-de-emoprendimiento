@@ -89,7 +89,7 @@
       <button class="navtab" data-page="mis-solicitudes" onclick="UI.irAPagina('mis-solicitudes')"><i class="ti ti-list"></i> Mis solicitudes</button>
       <button class="navtab" id="navtab-admin" style="display:none" data-page="admin" onclick="UI.irAPagina('admin')"><i class="ti ti-settings"></i> Administrar</button>
       <div class="topbar-actions">
-        <button class="btn btn-sm" onclick="UI.mostrarQR()" title="Mostrar código QR" aria-label="Mostrar código QR"><i class="ti ti-qrcode"></i></button>
+        <button class="btn btn-sm" onclick="UI.mostrarQR()" title="Mostrar código QR" aria-label="Mostrar código QR"><i class="ti ti-qrcode"></i> Código QR</button>
         <button class="btn btn-sm" id="btn-cerrar-sesion" onclick="UI.cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="ti ti-logout"></i> Cerrar sesión</button>
       </div>
     </nav>
@@ -321,10 +321,15 @@
 <!-- Modal QR -->
 <div class="modal-overlay" id="qr-modal">
   <div class="modal-box">
-    <h3>Acceso rápido</h3>
+    <i class="ti ti-qrcode" style="font-size:28px; color:var(--color-primary); margin-bottom:8px; display:block"></i>
+    <h3>Acceso rápido al estudio</h3>
+    <p class="helper-text" style="margin-bottom:1rem">Escanea este código desde tu celular para abrir esta misma página, ideal para imprimir en los billboards de la universidad.</p>
     <div id="qr-canvas-wrap"></div>
-    <p class="helper-text">Escanea este código para abrir la página del estudio desde tu celular.</p>
-    <button class="btn btn-block" style="margin-top:1rem" onclick="UI.cerrarQR()">Cerrar</button>
+    <p class="helper-text" id="qr-url-text" style="word-break:break-all; margin-top:4px"></p>
+    <div style="display:flex; gap:8px; margin-top:1rem">
+      <button class="btn" style="flex:1" onclick="UI.copiarEnlaceQR()"><i class="ti ti-copy"></i> Copiar enlace</button>
+      <button class="btn btn-primary" style="flex:1" onclick="UI.cerrarQR()">Cerrar</button>
+    </div>
   </div>
 </div>
 
