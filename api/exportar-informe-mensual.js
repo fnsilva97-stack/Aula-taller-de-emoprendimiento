@@ -1,6 +1,7 @@
 const { obtenerClienteAdmin, verificarAdmin } = require('./_helpers');
 const ExcelJS = require('exceljs');
 const path = require('path');
+const fs = require('fs');
 
 // Mapeo de celdas según la plantilla institucional "Formato de préstamo y/o traslado de bienes"
 const CELDAS = {
@@ -12,11 +13,11 @@ const CELDAS = {
   cargo: 'K10',
   depEmpDir: 'K11',
   destino: 'K12',
-  elementosFilaInicio: 15, // hasta fila 24 (10 elementos máx por hoja)
+  elementosFilaInicio: 15,
   elementosFilaFin: 24,
   colElemento: 'B',
   colCantidad: 'I',
-  otrosSolicitantesFilaInicio: 38, // hasta fila 40 (3 filas)
+  otrosSolicitantesFilaInicio: 38,
   otrosSolicitantesFilaFin: 40,
   colOtroNombre: 'B',
   colOtroCedula: 'F',
@@ -25,9 +26,76 @@ const CELDAS = {
 };
 
 function nombreHojaValido(texto, indice) {
-  // Excel no permite ciertos caracteres en nombres de hoja y limita a 31 caracteres
-  const limpio = texto.replace(/[\\/?*[\]:]/g, '').substring(0, 25);
+  const limpio = String(texto).replace(/[\\/?*[\]:]/g, '').substring(0, 25);
   return `${indice}. ${limpio}`;
+}
+
+function limpiarComentarios(hoja) {
+  // Elimina notas/comentarios de celdas, que han causado errores al combinar
+  // o reescribir workbooks en ciertas versiones de ExcelJS.
+  if (hoja.model && hoja.model.comments) {
+    hoja.model.comments = [];
+  }
+  hoja.eachRow({ includeEmpty: true }, (row) => {
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      if (cell.note !== undefined) {
+        try { cell.note = undefined; } catch (e) { /* ignorar */ }
+      }
+    });
+  });
+}
+
+function llenarHoja(hoja, reserva, perfil) {
+  const [anioReserva, mesReserva, diaReserva] = reserva.fecha.split('-');
+
+  hoja.getCell(CELDAS.fechaDia).value = parseInt(diaReserva);
+  hoja.getCell(CELDAS.fechaMes).value = parseInt(mesReserva);
+  hoja.getCell(CELDAS.fechaAnio).value = parseInt(anioReserva);
+
+  hoja.getCell(CELDAS.devolDia).value = parseInt(diaReserva);
+  hoja.getCell(CELDAS.devolMes).value = parseInt(mesReserva);
+  hoja.getCell(CELDAS.devolAnio).value = parseInt(anioReserva);
+
+  hoja.getCell(CELDAS.tipoInt).value = 'x';
+
+  hoja.getCell(CELDAS.nombre).value = perfil.nombre_completo || '';
+  hoja.getCell(CELDAS.cedula).value = perfil.cedula || '';
+  hoja.getCell(CELDAS.cargo).value = perfil.tipo_usuario === 'docente' ? 'Docente' : 'Estudiante';
+  hoja.getCell(CELDAS.depEmpDir).value = 'CREO';
+  hoja.getCell(CELDAS.destino).value = 'Aula taller';
+
+  const elementos = Array.isArray(reserva.elementos) ? reserva.elementos : [];
+  const maxElementos = CELDAS.elementosFilaFin - CELDAS.elementosFilaInicio + 1;
+  for (let i = 0; i < elementos.length && i < maxElementos; i++) {
+    const fila = CELDAS.elementosFilaInicio + i;
+    hoja.getCell(`${CELDAS.colElemento}${fila}`).value = elementos[i].nombre || '';
+    hoja.getCell(`${CELDAS.colCantidad}${fila}`).value = elementos[i].cantidad || 1;
+  }
+
+  const participantes = Array.isArray(reserva.participantes) ? reserva.participantes : [];
+  const otros = participantes.slice(1);
+  const maxOtros = CELDAS.otrosSolicitantesFilaFin - CELDAS.otrosSolicitantesFilaInicio + 1;
+  for (let i = 0; i < otros.length && i < maxOtros; i++) {
+    const fila = CELDAS.otrosSolicitantesFilaInicio + i;
+    hoja.getCell(`${CELDAS.colOtroNombre}${fila}`).value = otros[i].nombre || '';
+    hoja.getCell(`${CELDAS.colOtroCedula}${fila}`).value = otros[i].documento || '';
+    hoja.getCell(`${CELDAS.colOtroCargo}${fila}`).value = perfil.tipo_usuario === 'docente' ? 'Docente' : 'Estudiante';
+    hoja.getCell(`${CELDAS.colOtroDepEmpDir}${fila}`).value = 'CREO';
+  }
+
+  let observaciones = `Motivo: ${reserva.motivo || ''}`;
+  if (reserva.reporte_estado === 'con_incidente' && reserva.reporte_descripcion) {
+    observaciones += ` | Incidente reportado: ${reserva.reporte_descripcion}`;
+  }
+  hoja.getCell('A32').value = observaciones;
+
+  hoja.pageSetup = {
+    orientation: 'landscape',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    paperSize: 9
+  };
 }
 
 module.exports = async (req, res) => {
@@ -38,7 +106,7 @@ module.exports = async (req, res) => {
   try {
     await verificarAdmin(req.headers.authorization);
 
-    const { mes, anio } = req.body; // mes: 1-12
+    const { mes, anio } = req.body;
     if (!mes || !anio) {
       return res.status(400).json({ error: 'Faltan mes o año.' });
     }
@@ -64,92 +132,35 @@ module.exports = async (req, res) => {
     }
 
     const plantillaPath = path.join(process.cwd(), 'plantillas', 'plantilla_base.xlsx');
-    const workbookPlantilla = new ExcelJS.Workbook();
-    await workbookPlantilla.xlsx.readFile(plantillaPath);
-    const hojaBase = workbookPlantilla.getWorksheet('Formato de prestamo');
+    const plantillaBuffer = fs.readFileSync(plantillaPath);
 
     const workbookFinal = new ExcelJS.Workbook();
+    await workbookFinal.xlsx.load(plantillaBuffer);
+    const hojaPlantillaEnFinal = workbookFinal.getWorksheet('Formato de prestamo');
+    limpiarComentarios(hojaPlantillaEnFinal);
 
     for (let idx = 0; idx < reservas.length; idx++) {
       const reserva = reservas[idx];
       const perfil = reserva.profiles || {};
-
       const nombreHoja = nombreHojaValido(`${reserva.fecha}_${perfil.nombre_completo || 'Reserva'}`, idx + 1);
-      const hoja = workbookFinal.addWorksheet(nombreHoja);
 
-      // Clonar estructura de la hoja base (filas, columnas, merges, estilos)
-      hojaBase.columns.forEach((col, i) => {
-        hoja.getColumn(i + 1).width = col.width;
-      });
+      let hoja;
+      if (idx === 0) {
+        hoja = hojaPlantillaEnFinal;
+        hoja.name = nombreHoja;
+      } else {
+        const wbTemp = new ExcelJS.Workbook();
+        await wbTemp.xlsx.load(plantillaBuffer);
+        const hojaTemp = wbTemp.getWorksheet('Formato de prestamo');
+        limpiarComentarios(hojaTemp);
 
-      hojaBase.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-        const nuevaFila = hoja.getRow(rowNumber);
-        nuevaFila.height = row.height;
-        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          const nuevaCelda = nuevaFila.getCell(colNumber);
-          nuevaCelda.value = cell.value;
-          nuevaCelda.style = JSON.parse(JSON.stringify(cell.style));
-        });
-      });
-
-      hojaBase.model.merges.forEach(rango => {
-        try { hoja.mergeCells(rango); } catch (e) { /* ignorar merges duplicados */ }
-      });
-
-      // Configuración de impresión: horizontal, ajustada a 1 página de ancho
-      hoja.pageSetup = {
-        orientation: 'landscape',
-        fitToPage: true,
-        fitToWidth: 1,
-        fitToHeight: 0,
-        paperSize: 9 // A4
-      };
-
-      // ---- Llenar datos de la reserva ----
-      const [anioReserva, mesReserva, diaReserva] = reserva.fecha.split('-');
-
-      hoja.getCell(CELDAS.fechaDia).value = parseInt(diaReserva);
-      hoja.getCell(CELDAS.fechaMes).value = parseInt(mesReserva);
-      hoja.getCell(CELDAS.fechaAnio).value = parseInt(anioReserva);
-
-      hoja.getCell(CELDAS.devolDia).value = parseInt(diaReserva);
-      hoja.getCell(CELDAS.devolMes).value = parseInt(mesReserva);
-      hoja.getCell(CELDAS.devolAnio).value = parseInt(anioReserva);
-
-      hoja.getCell(CELDAS.tipoInt).value = 'x';
-
-      hoja.getCell(CELDAS.nombre).value = perfil.nombre_completo || '';
-      hoja.getCell(CELDAS.cedula).value = perfil.cedula || '';
-      hoja.getCell(CELDAS.cargo).value = perfil.tipo_usuario === 'docente' ? 'Docente' : 'Estudiante';
-      hoja.getCell(CELDAS.depEmpDir).value = 'CREO';
-      hoja.getCell(CELDAS.destino).value = 'Aula taller';
-
-      // Elementos (máximo 10 filas disponibles en la plantilla)
-      const elementos = Array.isArray(reserva.elementos) ? reserva.elementos : [];
-      for (let i = 0; i < elementos.length && i < (CELDAS.elementosFilaFin - CELDAS.elementosFilaInicio + 1); i++) {
-        const fila = CELDAS.elementosFilaInicio + i;
-        hoja.getCell(`${CELDAS.colElemento}${fila}`).value = elementos[i].nombre || '';
-        hoja.getCell(`${CELDAS.colCantidad}${fila}`).value = elementos[i].cantidad || 1;
+        hoja = workbookFinal.addWorksheet(nombreHoja);
+        hoja.model = JSON.parse(JSON.stringify(hojaTemp.model));
+        hoja.model.name = nombreHoja;
+        delete hoja.model.comments;
       }
 
-      // Participantes adicionales (el primero ya es el solicitante principal)
-      const participantes = Array.isArray(reserva.participantes) ? reserva.participantes : [];
-      const otros = participantes.slice(1); // el primero ya se considera el solicitante (1)
-      const maxOtros = CELDAS.otrosSolicitantesFilaFin - CELDAS.otrosSolicitantesFilaInicio + 1;
-      for (let i = 0; i < otros.length && i < maxOtros; i++) {
-        const fila = CELDAS.otrosSolicitantesFilaInicio + i;
-        hoja.getCell(`${CELDAS.colOtroNombre}${fila}`).value = otros[i].nombre || '';
-        hoja.getCell(`${CELDAS.colOtroCedula}${fila}`).value = otros[i].documento || '';
-        hoja.getCell(`${CELDAS.colOtroCargo}${fila}`).value = perfil.tipo_usuario === 'docente' ? 'Docente' : 'Estudiante';
-        hoja.getCell(`${CELDAS.colOtroDepEmpDir}${fila}`).value = 'CREO';
-      }
-
-      // Observaciones: incluir motivo de la reserva y, si aplica, el reporte de incidente
-      let observaciones = `Motivo: ${reserva.motivo || ''}`;
-      if (reserva.reporte_estado === 'con_incidente' && reserva.reporte_descripcion) {
-        observaciones += ` | Incidente reportado: ${reserva.reporte_descripcion}`;
-      }
-      hoja.getCell('A32').value = observaciones;
+      llenarHoja(hoja, reserva, perfil);
     }
 
     const buffer = await workbookFinal.xlsx.writeBuffer();
