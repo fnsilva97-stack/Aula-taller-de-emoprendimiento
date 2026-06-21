@@ -13,6 +13,7 @@ create extension if not exists "uuid-ossp";
 create table public.profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   nombre_completo text not null,
+  cedula text,
   correo text not null unique,
   tipo_usuario text not null check (tipo_usuario in ('estudiante', 'docente', 'admin')),
   puede_reservar boolean not null default false,
@@ -82,10 +83,11 @@ create unique index unico_slot_activo
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, nombre_completo, correo, tipo_usuario, estado, puede_reservar)
+  insert into public.profiles (id, nombre_completo, cedula, correo, tipo_usuario, estado, puede_reservar)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'nombre_completo', 'Sin nombre'),
+    new.raw_user_meta_data->>'cedula',
     new.email,
     coalesce(new.raw_user_meta_data->>'tipo_usuario', 'estudiante'),
     'pendiente',

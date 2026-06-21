@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
-    "resend": "^4.0.0"
+    "resend": "^4.0.0",
+    "exceljs": "^4.4.0"
   }
 }

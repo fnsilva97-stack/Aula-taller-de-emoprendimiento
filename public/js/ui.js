@@ -16,6 +16,13 @@ const UI = {
     document.getElementById('form-evento-fijo').addEventListener('submit', (e) => this.manejarCrearEvento(e));
     document.getElementById('form-inventario').addEventListener('submit', (e) => this.manejarAgregarInventario(e));
     document.getElementById('form-reporte-uso').addEventListener('submit', (e) => this.manejarEnvioReporte(e));
+    document.getElementById('form-exportar').addEventListener('submit', (e) => this.manejarExportarInforme(e));
+
+    const ahoraInit = new Date();
+    const selectMes = document.getElementById('export-mes');
+    const inputAnio = document.getElementById('export-anio');
+    if (selectMes) selectMes.value = String(ahoraInit.getMonth() + 1);
+    if (inputAnio) inputAnio.value = ahoraInit.getFullYear();
 
     const sesion = await Auth.obtenerSesionActual();
     if (sesion) {
@@ -77,12 +84,13 @@ const UI = {
     const errorEl = document.getElementById('register-error');
     errorEl.style.display = 'none';
     const nombre = document.getElementById('reg-nombre').value;
+    const cedula = document.getElementById('reg-cedula').value;
     const correo = document.getElementById('reg-correo').value;
     const tipo = document.getElementById('reg-tipo').value;
     const password = document.getElementById('reg-password').value;
 
     try {
-      await Auth.registrar(nombre, correo, tipo, password);
+      await Auth.registrar(nombre, cedula, correo, tipo, password);
       this.mostrarToast('Solicitud enviada. El administrador revisara tu acceso y te notificara por correo.');
       this.cambiarTabLogin('login');
       document.getElementById('form-register').reset();
@@ -605,6 +613,45 @@ const UI = {
       await this.cargarInventarioAdmin();
     } catch (err) {
       this.mostrarToast(err.message, true);
+    }
+  },
+
+  async manejarExportarInforme(e) {
+    e.preventDefault();
+    const errorEl = document.getElementById('exportar-error');
+    errorEl.style.display = 'none';
+    const btn = document.getElementById('btn-exportar-informe');
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader"></i> Generando...';
+
+    try {
+      const mes = parseInt(document.getElementById('export-mes').value);
+      const anio = parseInt(document.getElementById('export-anio').value);
+
+      const resultado = await Admin.exportarInformeMensual(mes, anio);
+
+      const binario = atob(resultado.archivo);
+      const bytes = new Uint8Array(binario.length);
+      for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = resultado.nombreArchivo;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      this.mostrarToast(`Informe generado con ${resultado.totalReservas} reserva(s).`);
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = '';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = textoOriginal;
     }
   },
 

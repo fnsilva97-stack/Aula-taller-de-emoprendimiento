@@ -2,7 +2,7 @@
 
 const Auth = {
 
-  async registrar(nombreCompleto, correo, tipoUsuario, password) {
+  async registrar(nombreCompleto, cedula, correo, tipoUsuario, password) {
     const correoNormalizado = correo.trim().toLowerCase();
 
     if (!correoNormalizado.endsWith(APP_CONFIG.DOMINIO_PERMITIDO)) {
@@ -15,6 +15,7 @@ const Auth = {
       options: {
         data: {
           nombre_completo: nombreCompleto.trim(),
+          cedula: cedula.trim(),
           tipo_usuario: tipoUsuario
         }
       }

@@ -102,5 +102,9 @@ const Admin = {
 
     const ahora = new Date();
     return (data || []).filter(r => new Date(`${r.fecha}T${r.hora_fin}:00`) < ahora).length;
+  },
+
+  async exportarInformeMensual(mes, anio) {
+    return this._llamarApi('exportar-informe-mensual', { mes, anio });
   }
 };

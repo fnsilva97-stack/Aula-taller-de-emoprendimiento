@@ -9,6 +9,7 @@ Aplicación web para consultar el horario del estudio de grabación y gestionar 
 - Formulario de solicitud de reserva (2 horas, hasta 24h de anticipación, con participantes, elementos y disclaimer).
 - Aprobación automática de reservas si el horario está libre.
 - Reporte de uso obligatorio después de cada reserva (sin novedad / con incidente), visible para el solicitante y el administrador.
+- Exportación del informe mensual de préstamo de elementos en Excel (.xlsx), con el formato institucional exacto, una hoja por reserva.
 - Panel de administración: aprobar/rechazar accesos, gestionar reservas, clases/bloqueos e inventario.
 - Notificaciones por correo al aprobar o rechazar (opcional, vía Resend).
 - Código QR de acceso rápido generado dentro de la misma app.
@@ -24,7 +25,7 @@ Aplicación web para consultar el horario del estudio de grabación y gestionar 
 ## Pasos de despliegue
 
 ### 1. Base de datos (Supabase) — YA HECHO
-Ya ejecutaste `database/schema.sql`, `database/migracion_seguridad_reservas.sql` y `database/migracion_reporte_uso.sql` en el SQL Editor de Supabase.
+Ya ejecutaste `database/schema.sql`, `database/migracion_seguridad_reservas.sql`, `database/migracion_reporte_uso.sql` y `database/migracion_cedula_perfil.sql` en el SQL Editor de Supabase.
 
 ### 2. Subir el código a GitHub
 1. Crea un repositorio nuevo en https://github.com/new (puede ser privado).
