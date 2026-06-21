@@ -13,68 +13,101 @@
 
 <div class="app-shell">
 
-  <!-- ============ LOGIN ============ -->
+  <!-- ============ LOGIN + HORARIO PÚBLICO ============ -->
   <div id="login-screen" class="login-screen">
-    <div class="login-card">
-      <div class="login-header">
-        <div class="crest">EG</div>
-        <h1>Estudio de Grabación</h1>
-        <p>Universidad del Magdalena</p>
+    <div class="login-public-layout">
+
+      <div class="login-public-horario">
+        <div class="topbar-public">
+          <div class="brand">
+            <div class="crest-sm">EG</div>
+            <div class="brand-text">
+              <strong>Estudio de Grabación</strong>
+              <span>U. del Magdalena</span>
+            </div>
+          </div>
+        </div>
+        <h2 class="page-title"><i class="ti ti-calendar"></i> Horario semanal</h2>
+        <div class="cal-toolbar">
+          <button class="btn btn-sm" onclick="UI.cambiarSemana(-1)"><i class="ti ti-chevron-left"></i></button>
+          <span class="week-label" id="week-label-public">Cargando semana...</span>
+          <button class="btn btn-sm" onclick="UI.cambiarSemana(1)"><i class="ti ti-chevron-right"></i></button>
+          <div class="cal-legend">
+            <span class="legend-clase">Clase</span>
+            <span class="legend-reserva">Reserva</span>
+            <span class="legend-bloqueo">Bloqueo</span>
+          </div>
+        </div>
+        <div id="cal-container-public">
+          <div class="empty-state"><i class="ti ti-loader"></i>Cargando horario...</div>
+        </div>
+        <p class="helper-text" style="margin-top:10px"><i class="ti ti-clock"></i> Horario de operación: 7:00 a.m. – 8:00 p.m., lunes a viernes. Inicia sesión para ver el detalle de cada reserva y solicitar el espacio.</p>
       </div>
 
-      <div class="tabs-pill">
-        <button id="tab-login" class="active" onclick="UI.cambiarTabLogin('login')">Ingresar</button>
-        <button id="tab-register" onclick="UI.cambiarTabLogin('register')">Registrarse</button>
+      <div class="login-public-form">
+        <div class="login-card">
+          <div class="login-header">
+            <div class="crest">EG</div>
+            <h1>Acceso</h1>
+            <p>Estudiantes y docentes</p>
+          </div>
+
+          <div class="tabs-pill">
+            <button id="tab-login" class="active" onclick="UI.cambiarTabLogin('login')">Ingresar</button>
+            <button id="tab-register" onclick="UI.cambiarTabLogin('register')">Registrarse</button>
+          </div>
+
+          <form id="form-login">
+            <div class="field">
+              <label>Correo institucional</label>
+              <input type="email" id="login-correo" placeholder="usuario@unimagdalena.edu.co" required>
+            </div>
+            <div class="field">
+              <label>Contraseña</label>
+              <input type="password" id="login-password" placeholder="Tu contraseña" required>
+            </div>
+            <div id="login-error" class="error-text" style="display:none"></div>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top:0.5rem">
+              Ingresar <i class="ti ti-arrow-right"></i>
+            </button>
+          </form>
+
+          <form id="form-register" style="display:none">
+            <div class="info-banner">
+              <i class="ti ti-info-circle"></i>
+              Solo se aceptan correos <strong>@unimagdalena.edu.co</strong>. Tu acceso quedará pendiente de aprobación por el administrador del estudio.
+            </div>
+            <div class="field">
+              <label>Nombre completo</label>
+              <input type="text" id="reg-nombre" placeholder="Tu nombre completo" required>
+            </div>
+            <div class="field">
+              <label>Número de documento (C.C.)</label>
+              <input type="text" id="reg-cedula" placeholder="Tu número de cédula" required>
+            </div>
+            <div class="field">
+              <label>Correo institucional</label>
+              <input type="email" id="reg-correo" placeholder="usuario@unimagdalena.edu.co" required>
+            </div>
+            <div class="field">
+              <label>Tipo de usuario</label>
+              <select id="reg-tipo">
+                <option value="estudiante">Estudiante</option>
+                <option value="docente">Docente</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Contraseña</label>
+              <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" minlength="8" required>
+            </div>
+            <div id="register-error" class="error-text" style="display:none"></div>
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top:0.5rem">
+              Solicitar acceso <i class="ti ti-send"></i>
+            </button>
+          </form>
+        </div>
       </div>
 
-      <form id="form-login">
-        <div class="field">
-          <label>Correo institucional</label>
-          <input type="email" id="login-correo" placeholder="usuario@unimagdalena.edu.co" required>
-        </div>
-        <div class="field">
-          <label>Contraseña</label>
-          <input type="password" id="login-password" placeholder="Tu contraseña" required>
-        </div>
-        <div id="login-error" class="error-text" style="display:none"></div>
-        <button type="submit" class="btn btn-primary btn-block" style="margin-top:0.5rem">
-          Ingresar <i class="ti ti-arrow-right"></i>
-        </button>
-      </form>
-
-      <form id="form-register" style="display:none">
-        <div class="info-banner">
-          <i class="ti ti-info-circle"></i>
-          Solo se aceptan correos <strong>@unimagdalena.edu.co</strong>. Tu acceso quedará pendiente de aprobación por el administrador del estudio.
-        </div>
-        <div class="field">
-          <label>Nombre completo</label>
-          <input type="text" id="reg-nombre" placeholder="Tu nombre completo" required>
-        </div>
-        <div class="field">
-          <label>Número de documento (C.C.)</label>
-          <input type="text" id="reg-cedula" placeholder="Tu número de cédula" required>
-        </div>
-        <div class="field">
-          <label>Correo institucional</label>
-          <input type="email" id="reg-correo" placeholder="usuario@unimagdalena.edu.co" required>
-        </div>
-        <div class="field">
-          <label>Tipo de usuario</label>
-          <select id="reg-tipo">
-            <option value="estudiante">Estudiante</option>
-            <option value="docente">Docente</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Contraseña</label>
-          <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" minlength="8" required>
-        </div>
-        <div id="register-error" class="error-text" style="display:none"></div>
-        <button type="submit" class="btn btn-primary btn-block" style="margin-top:0.5rem">
-          Solicitar acceso <i class="ti ti-send"></i>
-        </button>
-      </form>
     </div>
   </div>
 

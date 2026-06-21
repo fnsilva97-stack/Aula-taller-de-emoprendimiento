@@ -4,7 +4,7 @@ Aplicación web para consultar el horario del estudio de grabación y gestionar 
 
 ## ¿Qué incluye?
 
-- Consulta del horario semanal (clases, bloqueos y reservas).
+- Consulta del horario semanal (clases, bloqueos y reservas), visible incluso sin iniciar sesión — ideal para el QR en los billboards. Sin sesión se muestra "Ocupado" en lugar del nombre del solicitante, por privacidad.
 - Registro con correo institucional (@unimagdalena.edu.co) y aprobación de acceso por el administrador.
 - Formulario de solicitud de reserva (2 horas, hasta 24h de anticipación, con participantes, elementos y disclaimer).
 - Aprobación automática de reservas si el horario está libre.
@@ -25,7 +25,9 @@ Aplicación web para consultar el horario del estudio de grabación y gestionar 
 ## Pasos de despliegue
 
 ### 1. Base de datos (Supabase) — YA HECHO
-Ya ejecutaste `database/schema.sql`, `database/migracion_seguridad_reservas.sql`, `database/migracion_reporte_uso.sql` y `database/migracion_cedula_perfil.sql` en el SQL Editor de Supabase.
+Ya ejecutaste `database/schema.sql`, `database/migracion_seguridad_reservas.sql`, `database/migracion_reporte_uso.sql`, `database/migracion_cedula_perfil.sql` y `database/migracion_horario_publico.sql` en el SQL Editor de Supabase.
+
+También desactivaste "Confirm email" en Supabase → Authentication → Providers → Email, ya que el acceso real se controla con la aprobación manual del administrador, no con la confirmación de correo.
 
 ### 2. Subir el código a GitHub
 1. Crea un repositorio nuevo en https://github.com/new (puede ser privado).

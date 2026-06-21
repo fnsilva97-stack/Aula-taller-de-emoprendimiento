@@ -35,15 +35,39 @@ body {
 /* ---------- Login ---------- */
 .login-screen {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
   background: linear-gradient(180deg, var(--color-bg) 0%, #f1efe6 100%);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+.login-public-layout {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1200px;
+  align-items: flex-start;
+}
+.login-public-horario {
+  flex: 1.6;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+.login-public-horario .topbar-public { margin-bottom: 1rem; }
+.login-public-form {
+  flex: 1;
+  max-width: 400px;
+  display: flex;
+  align-items: flex-start;
+}
+@media (max-width: 900px) {
+  .login-public-layout { flex-direction: column; }
+  .login-public-form { max-width: 100%; width: 100%; }
 }
 .login-card {
   width: 100%;
-  max-width: 400px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;

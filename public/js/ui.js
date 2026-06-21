@@ -34,6 +34,7 @@ const UI = {
       }
     }
     this.mostrarLogin();
+    await this.cargarHorario(); // horario público, visible sin sesión
   },
 
   poblarSelectsHora() {
@@ -104,6 +105,7 @@ const UI = {
     await Auth.cerrarSesion();
     this.perfilActual = null;
     this.mostrarLogin();
+    await this.cargarHorario();
   },
 
   mostrarLogin() {
@@ -178,22 +180,29 @@ const UI = {
     viernes.setDate(viernes.getDate() + 4);
 
     const opciones = { day: 'numeric', month: 'short' };
-    document.getElementById('week-label').textContent =
-      `Semana del ${lunes.toLocaleDateString('es-CO', opciones)} al ${viernes.toLocaleDateString('es-CO', opciones)}`;
+    const textoSemana = `Semana del ${lunes.toLocaleDateString('es-CO', opciones)} al ${viernes.toLocaleDateString('es-CO', opciones)}`;
+
+    const labelLogueado = document.getElementById('week-label');
+    const labelPublico = document.getElementById('week-label-public');
+    if (labelLogueado) labelLogueado.textContent = textoSemana;
+    if (labelPublico) labelPublico.textContent = textoSemana;
 
     const fechaInicioISO = this.formatearFechaISO(lunes);
     const fechaFinISO = this.formatearFechaISO(viernes);
 
+    const idContenedor = document.getElementById('main-app').style.display !== 'none' ? 'cal-container' : 'cal-container-public';
+
     try {
       const { reservas, eventosFijos } = await Reservas.obtenerHorarioSemana(fechaInicioISO, fechaFinISO);
-      this.renderizarCalendario(lunes, reservas, eventosFijos);
+      this.renderizarCalendario(lunes, reservas, eventosFijos, idContenedor);
     } catch (err) {
-      document.getElementById('cal-container').innerHTML = `<div class="empty-state"><i class="ti ti-alert-triangle"></i>Error al cargar el horario.</div>`;
+      const contenedor = document.getElementById(idContenedor);
+      if (contenedor) contenedor.innerHTML = `<div class="empty-state"><i class="ti ti-alert-triangle"></i>Error al cargar el horario.</div>`;
       console.error(err);
     }
   },
 
-  renderizarCalendario(lunes, reservas, eventosFijos) {
+  renderizarCalendario(lunes, reservas, eventosFijos, idContenedor = 'cal-container') {
     const dias = [];
     for (let i = 0; i < 5; i++) {
       const d = new Date(lunes);
@@ -226,14 +235,14 @@ const UI = {
           const claseCss = eventoEnHora.tipo === 'clase' ? 'ev-clase' : 'ev-bloqueo';
           html += `<div class="cal-event ${claseCss}">${this.escaparHtml(eventoEnHora.titulo)}</div>`;
         } else if (reservaEnHora) {
-          const nombreSolicitante = reservaEnHora.profiles ? reservaEnHora.profiles.nombre_completo : 'Reserva';
-          html += `<div class="cal-event ev-reserva">${this.escaparHtml(nombreSolicitante)}</div>`;
+          const textoReserva = reservaEnHora.nombre_solicitante || 'Ocupado';
+          html += `<div class="cal-event ev-reserva">${this.escaparHtml(textoReserva)}</div>`;
         }
         html += '</div>';
       });
     }
     html += '</div>';
-    document.getElementById('cal-container').innerHTML = html;
+    document.getElementById(idContenedor).innerHTML = html;
   },
 
   // ---------------- Formulario de reserva ----------------

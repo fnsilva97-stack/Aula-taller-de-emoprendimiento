@@ -108,10 +108,12 @@ const Reservas = {
   async obtenerHorarioSemana(fechaInicioISO, fechaFinISO) {
     const { data: reservas, error: errReservas } = await supabaseClient
       .from('reservas')
-      .select('*, profiles!reservas_solicitante_id_fkey(nombre_completo)')
+      .select('id, fecha, hora_inicio, hora_fin, estado, solicitante_id')
       .gte('fecha', fechaInicioISO)
       .lte('fecha', fechaFinISO)
       .in('estado', ['pendiente', 'aprobada']);
+
+    if (errReservas) throw errReservas;
 
     const { data: eventosFijos, error: errEventos } = await supabaseClient
       .from('eventos_fijos')
@@ -119,10 +121,33 @@ const Reservas = {
       .lte('fecha_inicio', fechaFinISO)
       .gte('fecha_fin', fechaInicioISO);
 
-    if (errReservas) throw errReservas;
     if (errEventos) throw errEventos;
 
-    return { reservas: reservas || [], eventosFijos: eventosFijos || [] };
+    // Si hay sesión iniciada, intentamos traer los nombres de los solicitantes
+    // (la política de "profiles" requiere autenticación; sin sesión, simplemente
+    // no se obtienen nombres y el calendario mostrará "Ocupado").
+    const sesion = await Auth.obtenerSesionActual();
+    let reservasConNombre = reservas || [];
+
+    if (sesion && reservasConNombre.length > 0) {
+      const idsSolicitantes = [...new Set(reservasConNombre.map(r => r.solicitante_id))];
+      const { data: perfiles } = await supabaseClient
+        .from('profiles')
+        .select('id, nombre_completo')
+        .in('id', idsSolicitantes);
+
+      const mapaNombres = {};
+      (perfiles || []).forEach(p => { mapaNombres[p.id] = p.nombre_completo; });
+
+      reservasConNombre = reservasConNombre.map(r => ({
+        ...r,
+        nombre_solicitante: mapaNombres[r.solicitante_id] || 'Reserva'
+      }));
+    } else {
+      reservasConNombre = reservasConNombre.map(r => ({ ...r, nombre_solicitante: null }));
+    }
+
+    return { reservas: reservasConNombre, eventosFijos: eventosFijos || [] };
   },
 
   async obtenerMisSolicitudes() {
